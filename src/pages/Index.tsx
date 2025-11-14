@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,61 @@ const Index = () => {
   const [area, setArea] = useState('');
   const [workType, setWorkType] = useState('');
   const [price, setPrice] = useState<number | null>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const [projectsCount, setProjectsCount] = useState(0);
+  const [clientsCount, setClientsCount] = useState(0);
+  const [experienceCount, setExperienceCount] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+          animateCounters();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (statsRef.current) {
+      observer.observe(statsRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  const animateCounters = () => {
+    const duration = 2000;
+    const steps = 60;
+    const projectsTarget = 150;
+    const clientsTarget = 320;
+    const experienceTarget = 12;
+
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      setProjectsCount(Math.floor((projectsTarget / steps) * step));
+      setClientsCount(Math.floor((clientsTarget / steps) * step));
+      setExperienceCount(Math.floor((experienceTarget / steps) * step));
+
+      if (step >= steps) {
+        clearInterval(interval);
+        setProjectsCount(projectsTarget);
+        setClientsCount(clientsTarget);
+        setExperienceCount(experienceTarget);
+      }
+    }, duration / steps);
+  };
 
   const services = [
     {
@@ -120,8 +175,15 @@ const Index = () => {
         </div>
       </header>
 
-      <section className="relative bg-gradient-to-br from-secondary via-secondary/95 to-primary text-white py-24 md:py-32">
-        <div className="container mx-auto px-4">
+      <section className="relative bg-gradient-to-br from-secondary via-secondary/95 to-primary text-white py-24 md:py-32 overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+            transform: `translateY(${scrollY * 0.3}px)`
+          }}
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl animate-fade-in">
             <h2 className="text-4xl md:text-6xl font-bold font-heading mb-6">
               Отделочные работы под ключ
@@ -151,10 +213,10 @@ const Index = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {services.map((service, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+              <Card key={index} className="hover:shadow-xl hover:-translate-y-2 transition-all duration-300 animate-fade-in group" style={{ animationDelay: `${index * 0.1}s` }}>
                 <CardHeader>
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                    <Icon name={service.icon as any} className="w-6 h-6 text-primary" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary group-hover:scale-110 transition-all duration-300">
+                    <Icon name={service.icon as any} className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                   </div>
                   <CardTitle className="font-heading">{service.title}</CardTitle>
                   <CardDescription>{service.description}</CardDescription>
@@ -180,6 +242,31 @@ const Index = () => {
         </div>
       </section>
 
+      <section ref={statsRef} className="py-16 bg-gradient-to-r from-primary to-primary/90 text-white">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8 text-center">
+            <div className="animate-fade-in">
+              <div className="text-5xl md:text-6xl font-bold font-heading mb-2">
+                {projectsCount}+
+              </div>
+              <p className="text-lg text-white/80">Завершённых проектов</p>
+            </div>
+            <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <div className="text-5xl md:text-6xl font-bold font-heading mb-2">
+                {clientsCount}+
+              </div>
+              <p className="text-lg text-white/80">Довольных клиентов</p>
+            </div>
+            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <div className="text-5xl md:text-6xl font-bold font-heading mb-2">
+                {experienceCount}
+              </div>
+              <p className="text-lg text-white/80">Лет опыта</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="portfolio" className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12 animate-fade-in">
@@ -190,9 +277,9 @@ const Index = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {portfolioItems.map((item, index) => (
-              <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="aspect-video bg-muted">
-                  <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+              <Card key={index} className="overflow-hidden hover:shadow-xl transition-all duration-300 animate-fade-in group" style={{ animationDelay: `${index * 0.1}s` }}>
+                <div className="aspect-video bg-muted overflow-hidden">
+                  <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                 </div>
                 <CardHeader>
                   <CardTitle className="font-heading">{item.title}</CardTitle>
@@ -279,7 +366,7 @@ const Index = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {reviews.map((review, index) => (
-              <Card key={index} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+              <Card key={index} className="animate-fade-in hover:shadow-lg transition-all duration-300 border-l-4 border-l-transparent hover:border-l-primary" style={{ animationDelay: `${index * 0.1}s` }}>
                 <CardHeader>
                   <div className="flex gap-1 mb-2">
                     {[...Array(review.rating)].map((_, i) => (
